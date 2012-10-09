@@ -78,6 +78,8 @@ public class CropImage extends MonitoredActivity {
     private boolean mScale;
     private boolean mScaleUp = true;
 
+    private String mSaveLabel = "";
+
     boolean mWaitingToPick; // Whether we are wait the user to pick a face.
     boolean mSaving;  // Whether the "save" button is already clicked.
 
@@ -111,6 +113,7 @@ public class CropImage extends MonitoredActivity {
         }
 
         mImageView = (CropImageView) findViewById(R.id.image);
+        mSaveLabel = getString(R.string.crop_save_text);
 
         Intent intent = getIntent();
         Bundle extras = intent.getExtras();
@@ -141,6 +144,7 @@ public class CropImage extends MonitoredActivity {
             mDoFaceDetection = extras.containsKey("noFaceDetection")
                     ? !extras.getBoolean("noFaceDetection")
                     : true;
+        	mSaveLabel = extras.getString("saveLabel", getString(R.string.crop_save_text));
         }
 
         if (mBitmap == null) {
@@ -172,7 +176,7 @@ public class CropImage extends MonitoredActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        MenuItem menu1 = menu.add(0, 0, 0, R.string.crop_save_text);
+        MenuItem menu1 = menu.add(0, 0, 0, mSaveLabel);
         menu1.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS | MenuItem.SHOW_AS_ACTION_WITH_TEXT);
         return true;
     }
