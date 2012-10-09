@@ -27,26 +27,6 @@
             android:layout_height="fill_parent"
             class="com.android.camera.CropImageView"
             android:background="#55000000"/>
-        <RelativeLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
-            android:layout_centerHorizontal="true"
-            android:orientation="horizontal"
-            android:paddingLeft="10dip"
-            android:paddingRight="10dip">
-            <Button
-                android:id="@+id/save"
-                android:layout_width="100dip"
-                android:layout_height="wrap_content"
-                android:layout_alignParentLeft="true"
-                android:text="@string/crop_save_text"/>
-            <Button
-                android:id="@+id/discard"
-                android:layout_width="100dip"
-                android:layout_height="wrap_content"
-                android:layout_alignParentRight="true"
-                android:text="@string/crop_discard_text"/>
-        </RelativeLayout>
+       
     </RelativeLayout>
 </FrameLayout>

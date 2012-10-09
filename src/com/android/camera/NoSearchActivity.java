@@ -16,9 +16,11 @@
 
 package com.android.camera;
 
+import com.actionbarsherlock.app.SherlockActivity;
+
 import android.app.Activity;
 
-public class NoSearchActivity extends Activity {
+public class NoSearchActivity extends SherlockActivity {
     @Override
     public boolean onSearchRequested() {
         return false;

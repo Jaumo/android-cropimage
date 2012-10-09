@@ -16,7 +16,9 @@
 
 package com.android.camera;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -43,11 +45,13 @@ import android.provider.MediaStore;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
-import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.actionbarsherlock.view.Menu;
+import com.actionbarsherlock.view.MenuItem;
 import com.android.camera.gallery.IImage;
 import com.android.camera.gallery.IImageList;
 import com.android.gallery.R;
@@ -91,8 +95,20 @@ public class CropImage extends MonitoredActivity {
         super.onCreate(icicle);
         mContentResolver = getContentResolver();
 
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
+		requestWindowFeature(Window.FEATURE_ACTION_BAR_OVERLAY);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setBackgroundDrawable(getResources().getDrawable(R.drawable.ab_bg_black));
         setContentView(R.layout.cropimage);
+
+        ImageView home = (ImageView) findViewById(android.R.id.home);
+        if (home != null) {
+        	home.setAlpha(70);
+        }
+
+        ImageView home2 = (ImageView) findViewById(R.id.abs__home);
+        if (home2 != null) {
+        	home2.setAlpha(70);
+        }
 
         mImageView = (CropImageView) findViewById(R.id.image);
 
@@ -149,22 +165,29 @@ public class CropImage extends MonitoredActivity {
         // Make UI fullscreen.
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
-        findViewById(R.id.discard).setOnClickListener(
-                new View.OnClickListener() {
-                    public void onClick(View v) {
-                        setResult(RESULT_CANCELED);
-                        finish();
-                    }
-                });
-
-        findViewById(R.id.save).setOnClickListener(
-                new View.OnClickListener() {
-                    public void onClick(View v) {
-                        onSaveClicked();
-                    }
-                });
-
         startFaceDetection();
+    }
+
+
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuItem menu1 = menu.add(0, 0, 0, R.string.crop_save_text);
+        menu1.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS | MenuItem.SHOW_AS_ACTION_WITH_TEXT);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == 0) {
+        	onSaveClicked();
+        }
+        else if (item.getItemId() == android.R.id.home) {
+        	setResult(RESULT_CANCELED);
+        	finish();
+        }
+
+        return true;
     }
 
     private void startFaceDetection() {
@@ -212,6 +235,11 @@ public class CropImage extends MonitoredActivity {
         // bitmap doesn't have to be read into memory
         if (mCrop == null) {
             return;
+        }
+
+        if ((mCrop.mCropRect.right - mCrop.mCropRect.left) < 80) {
+        	Toast.makeText(this, R.string.crop_too_small, Toast.LENGTH_SHORT).show();
+        	return;
         }
 
         if (mSaving) return;
@@ -298,9 +326,35 @@ public class CropImage extends MonitoredActivity {
                 || myExtras.getBoolean("return-data"))) {
             Bundle extras = new Bundle();
             extras.putParcelable("data", croppedImage);
+
             setResult(RESULT_OK,
                     (new Intent()).setAction("inline-data").putExtras(extras));
             finish();
+        } else if (myExtras != null && myExtras.containsKey("getcrop")) {
+        	 Bundle extras = new Bundle();
+        	 extras.putInt("size", mCrop.getCropRect().right - mCrop.getCropRect().left);
+             extras.putInt("left", mCrop.getCropRect().left);
+             extras.putInt("top", mCrop.getCropRect().top);
+
+             if (myExtras.containsKey("dosave")) {
+            	 ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            	 croppedImage.compress(Bitmap.CompressFormat.JPEG, 80, bytes);
+
+            	 //you can create a new file name "test.jpg" in sdcard folder.
+            	 File f = new File(mSaveUri.getPath());
+            	 try {
+					f.createNewFile();
+					//write the bytes in file
+	            	 FileOutputStream fo = new FileOutputStream(f);
+	            	 fo.write(bytes.toByteArray());
+				} catch (IOException e) {
+					Log.e("", "", e);
+				}
+             }
+
+             setResult(RESULT_OK,
+                     (new Intent()).setAction("inline-data").putExtras(extras));
+             finish();
         } else {
             final Bitmap b = croppedImage;
             final int msdId = mSetWallpaper
