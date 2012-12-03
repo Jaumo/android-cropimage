@@ -54,7 +54,7 @@ import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
 import com.jaumo.cropimage.gallery.IImage;
 import com.jaumo.cropimage.gallery.IImageList;
-import com.android.gallery.R;
+import com.jaumo.cropimage.R;
 
 /**
  * The activity can crop specific region of interest from an image.
