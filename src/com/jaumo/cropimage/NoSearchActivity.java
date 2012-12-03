@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.camera;
+package com.jaumo.cropimage;
 
 import com.actionbarsherlock.app.SherlockActivity;
-
-import android.app.Activity;
 
 public class NoSearchActivity extends SherlockActivity {
     @Override

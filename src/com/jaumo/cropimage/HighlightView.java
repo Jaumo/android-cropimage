@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.camera;
+package com.jaumo.cropimage;
 
 import com.android.gallery.R;
 

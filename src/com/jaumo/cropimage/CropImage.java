@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.camera;
+package com.jaumo.cropimage;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -52,8 +52,8 @@ import android.widget.Toast;
 
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
-import com.android.camera.gallery.IImage;
-import com.android.camera.gallery.IImageList;
+import com.jaumo.cropimage.gallery.IImage;
+import com.jaumo.cropimage.gallery.IImageList;
 import com.android.gallery.R;
 
 /**

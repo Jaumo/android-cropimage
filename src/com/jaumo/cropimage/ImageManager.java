@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.camera;
+package com.jaumo.cropimage;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -40,12 +40,12 @@ import android.provider.MediaStore;
 import android.provider.MediaStore.Images;
 import android.util.Log;
 
-import com.android.camera.gallery.BaseImageList;
-import com.android.camera.gallery.IImage;
-import com.android.camera.gallery.IImageList;
-import com.android.camera.gallery.ImageList;
-import com.android.camera.gallery.ImageListUber;
-import com.android.camera.gallery.SingleImageList;
+import com.jaumo.cropimage.gallery.BaseImageList;
+import com.jaumo.cropimage.gallery.IImage;
+import com.jaumo.cropimage.gallery.IImageList;
+import com.jaumo.cropimage.gallery.ImageList;
+import com.jaumo.cropimage.gallery.ImageListUber;
+import com.jaumo.cropimage.gallery.SingleImageList;
 
 /**
  * ImageManager is used to retrieve and store images

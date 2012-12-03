@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.android.camera.gallery;
+package com.jaumo.cropimage.gallery;
 
-import com.android.camera.BitmapManager;
-import com.android.camera.Util;
+import com.jaumo.cropimage.BitmapManager;
+import com.jaumo.cropimage.Util;
 
 import android.content.ContentResolver;
 import android.graphics.Bitmap;

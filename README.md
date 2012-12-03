@@ -20,7 +20,7 @@ To work-around this bug you have to disable hardware acceleration for the
 `CropImage` activity by adding an entry like this in your `AndroidManifest.xml`:
 
     <activity
-        android:name="com.android.camera.CropImage"
+        android:name="com.jaumo.cropimage.CropImage"
         android:hardwareAccelerated="false"/>
 
 

@@ -14,15 +14,10 @@
  * limitations under the License.
  */
 
-package com.android.camera;
+package com.jaumo.cropimage;
 
-import com.android.gallery.R;
-
-import android.app.Activity;
-import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.ContentResolver;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -35,10 +30,8 @@ import android.os.ParcelFileDescriptor;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.animation.Animation;
-import android.view.animation.TranslateAnimation;
 
-import com.android.camera.gallery.IImage;
+import com.jaumo.cropimage.gallery.IImage;
 
 import java.io.Closeable;
 import java.io.FileDescriptor;
