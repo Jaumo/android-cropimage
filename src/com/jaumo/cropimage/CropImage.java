@@ -144,7 +144,10 @@ public class CropImage extends MonitoredActivity {
             mDoFaceDetection = extras.containsKey("noFaceDetection")
                     ? !extras.getBoolean("noFaceDetection")
                     : true;
-        	mSaveLabel = extras.getString("saveLabel", getString(R.string.crop_save_text));
+        	mSaveLabel = extras.getString("saveLabel");
+		if (null == mSaveLabel) {
+			mSaveLabel = getString(R.string.crop_save_text);
+		}
         }
 
         if (mBitmap == null) {
