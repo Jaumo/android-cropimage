@@ -97,19 +97,19 @@ public class CropImage extends MonitoredActivity {
         super.onCreate(icicle);
         mContentResolver = getContentResolver();
 
-		requestWindowFeature(Window.FEATURE_ACTION_BAR_OVERLAY);
+        requestWindowFeature(Window.FEATURE_ACTION_BAR_OVERLAY);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setBackgroundDrawable(getResources().getDrawable(R.drawable.ab_bg_black));
         setContentView(R.layout.cropimage);
 
         ImageView home = (ImageView) findViewById(android.R.id.home);
         if (home != null) {
-        	home.setAlpha(70);
+            home.setAlpha(70);
         }
 
         ImageView home2 = (ImageView) findViewById(R.id.abs__home);
         if (home2 != null) {
-        	home2.setAlpha(70);
+            home2.setAlpha(70);
         }
 
         mImageView = (CropImageView) findViewById(R.id.image);
@@ -144,10 +144,10 @@ public class CropImage extends MonitoredActivity {
             mDoFaceDetection = extras.containsKey("noFaceDetection")
                     ? !extras.getBoolean("noFaceDetection")
                     : true;
-        	mSaveLabel = extras.getString("saveLabel");
-		if (null == mSaveLabel) {
-			mSaveLabel = getString(R.string.crop_save_text);
-		}
+            mSaveLabel = extras.getString("saveLabel");
+            if (null == mSaveLabel) {
+                mSaveLabel = getString(R.string.crop_save_text);
+            }
         }
 
         if (mBitmap == null) {
@@ -187,11 +187,11 @@ public class CropImage extends MonitoredActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == 0) {
-        	onSaveClicked();
+            onSaveClicked();
         }
         else if (item.getItemId() == android.R.id.home) {
-        	setResult(RESULT_CANCELED);
-        	finish();
+            setResult(RESULT_CANCELED);
+            finish();
         }
 
         return true;
@@ -245,8 +245,8 @@ public class CropImage extends MonitoredActivity {
         }
 
         if ((mCrop.mCropRect.right - mCrop.mCropRect.left) < 80) {
-        	Toast.makeText(this, R.string.crop_too_small, Toast.LENGTH_SHORT).show();
-        	return;
+            Toast.makeText(this, R.string.crop_too_small, Toast.LENGTH_SHORT).show();
+            return;
         }
 
         if (mSaving) return;
@@ -338,25 +338,25 @@ public class CropImage extends MonitoredActivity {
                     (new Intent()).setAction("inline-data").putExtras(extras));
             finish();
         } else if (myExtras != null && myExtras.containsKey("getcrop")) {
-        	 Bundle extras = new Bundle();
-        	 extras.putInt("size", mCrop.getCropRect().right - mCrop.getCropRect().left);
-             extras.putInt("left", mCrop.getCropRect().left);
-             extras.putInt("top", mCrop.getCropRect().top);
+            Bundle extras = new Bundle();
+            extras.putInt("size", mCrop.getCropRect().right - mCrop.getCropRect().left);
+            extras.putInt("left", mCrop.getCropRect().left);
+            extras.putInt("top", mCrop.getCropRect().top);
 
-             if (myExtras.containsKey("dosave")) {
-            	 ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-            	 croppedImage.compress(Bitmap.CompressFormat.JPEG, 80, bytes);
+            if (myExtras.containsKey("dosave")) {
+                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                croppedImage.compress(Bitmap.CompressFormat.JPEG, 80, bytes);
 
-            	 //you can create a new file name "test.jpg" in sdcard folder.
-            	 File f = new File(mSaveUri.getPath());
-            	 try {
-					f.createNewFile();
-					//write the bytes in file
-	            	 FileOutputStream fo = new FileOutputStream(f);
-	            	 fo.write(bytes.toByteArray());
-				} catch (IOException e) {
-					Log.e("", "", e);
-				}
+                //you can create a new file name "test.jpg" in sdcard folder.
+                File f = new File(mSaveUri.getPath());
+                try {
+                    f.createNewFile();
+                    //write the bytes in file
+                    FileOutputStream fo = new FileOutputStream(f);
+                    fo.write(bytes.toByteArray());
+                } catch (IOException e) {
+                    Log.e("", "", e);
+                }
              }
 
              setResult(RESULT_OK,
