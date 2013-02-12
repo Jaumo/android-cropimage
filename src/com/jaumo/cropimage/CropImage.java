@@ -345,7 +345,7 @@ public class CropImage extends MonitoredActivity {
 
             if (myExtras.containsKey("dosave")) {
                 ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-                croppedImage.compress(Bitmap.CompressFormat.JPEG, 80, bytes);
+                croppedImage.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
 
                 //you can create a new file name "test.jpg" in sdcard folder.
                 File f = new File(mSaveUri.getPath());
