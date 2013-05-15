@@ -90,7 +90,9 @@ class HighlightView {
                 path.addRect(new RectF(mDrawRect), Path.Direction.CW);
                 mOutlinePaint.setColor(0xff33b5e5);
             }
-            canvas.clipPath(path, Region.Op.DIFFERENCE);
+            if (!canvas.isHardwareAccelerated()) {
+                canvas.clipPath(path, Region.Op.DIFFERENCE);
+            }
             canvas.drawRect(viewDrawingRect,
                     hasFocus() ? mFocusPaint : mNoFocusPaint);
 
