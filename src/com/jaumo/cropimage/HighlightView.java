@@ -20,6 +20,8 @@ import android.graphics.*;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 
+import java.lang.NoSuchMethodError;
+
 // This class is used by CropImage to display a highlighted cropping rectangle
 // overlayed with the image. There are two coordinate spaces in use. One is
 // image, another is screen. computeLayout() uses mMatrix to map from image
@@ -90,8 +92,14 @@ class HighlightView {
                 path.addRect(new RectF(mDrawRect), Path.Direction.CW);
                 mOutlinePaint.setColor(0xff33b5e5);
             }
-            if (!canvas.isHardwareAccelerated()) {
-                canvas.clipPath(path, Region.Op.DIFFERENCE);
+
+            try {
+                if (!canvas.isHardwareAccelerated()) {
+                    canvas.clipPath(path, Region.Op.DIFFERENCE);
+                }
+            }
+            catch (NoSuchMethodError e) {
+                // Just dont clip path then
             }
             canvas.drawRect(viewDrawingRect,
                     hasFocus() ? mFocusPaint : mNoFocusPaint);
