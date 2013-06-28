@@ -101,6 +101,10 @@ class HighlightView {
             catch (NoSuchMethodError e) {
                 // Just dont clip path then
             }
+            catch (UnsupportedOperationException e) {
+                // Just to be sure
+            }
+
             canvas.drawRect(viewDrawingRect,
                     hasFocus() ? mFocusPaint : mNoFocusPaint);
 
