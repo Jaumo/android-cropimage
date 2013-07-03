@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.jaumo.cropimage</groupId>
 	<artifactId>android-cropimage</artifactId>
-	<version>1.0.3-SNAPSHOT</version>
+	<version>1.0.4-SNAPSHOT</version>
 	<packaging>apklib</packaging>
 	<name>AndroidCropImage</name>
 
@@ -23,7 +23,7 @@
 		<dependency>
 			<groupId>com.actionbarsherlock</groupId>
 			<artifactId>actionbarsherlock</artifactId>
-			<version>4.2.0</version>
+			<version>4.3.1</version>
 			<type>apklib</type>
 		</dependency>
 	</dependencies>
