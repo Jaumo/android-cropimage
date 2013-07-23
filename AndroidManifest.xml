@@ -5,4 +5,5 @@
     android:versionName="1.0"
     package="com.jaumo.cropimage">
     <uses-sdk android:minSdkVersion="7" />
+    <application/>
 </manifest>
