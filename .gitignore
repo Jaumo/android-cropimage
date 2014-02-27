@@ -8,5 +8,5 @@ local.properties
 .pc/
 .settings/
 bin/
-gen/
+build/
 target/
