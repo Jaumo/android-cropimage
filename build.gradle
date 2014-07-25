@@ -10,7 +10,7 @@ apply plugin: 'android-library'
 
 repositories {
     maven {
-        url '/Users/br/repos/mvn-repo/'
+        url '/Users/br/repos/ext/mvn-repo/'
     }
     maven { url 'http://repo1.maven.org/maven2' }
 }
