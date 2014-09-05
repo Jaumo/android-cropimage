@@ -403,4 +403,7 @@
 
     <!-- Shown if user selects a too small crop -->
     <string name="crop_too_small">Crop is too small.</string>
+
+    <!-- Out of memory -->
+    <string name="out_of_memory">Not enough memory. Please close some applications and try again.</string>
 </resources>

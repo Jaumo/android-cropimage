@@ -289,10 +289,16 @@ public class CropImage extends MonitoredActivity {
 
             // If we are circle cropping, we want alpha channel, which is the
             // third param here.
-            croppedImage = Bitmap.createBitmap(width, height,
-                    mCircleCrop
-                    ? Bitmap.Config.ARGB_8888
-                    : Bitmap.Config.RGB_565);
+            try {
+                croppedImage = Bitmap.createBitmap(width, height,
+                        mCircleCrop
+                                ? Bitmap.Config.ARGB_8888
+                                : Bitmap.Config.RGB_565);
+            }
+            catch (OutOfMemoryError e) {
+                Toast.makeText(this, R.string.out_of_memory, Toast.LENGTH_SHORT).show();
+                return;
+            }
 
             Canvas canvas = new Canvas(croppedImage);
             Rect dstRect = new Rect(0, 0, width, height);
