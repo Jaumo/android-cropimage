@@ -94,12 +94,12 @@ public class CropImage extends MonitoredActivity {
 
     @Override
     public void onCreate(Bundle icicle) {
+        supportRequestWindowFeature(Window.FEATURE_ACTION_BAR_OVERLAY);
         super.onCreate(icicle);
         mContentResolver = getContentResolver();
 
-        requestWindowFeature(Window.FEATURE_ACTION_BAR_OVERLAY);
-        getActionBar().setDisplayHomeAsUpEnabled(true);
-        getActionBar().setBackgroundDrawable(getResources().getDrawable(R.drawable.ab_bg_black));
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setBackgroundDrawable(getResources().getDrawable(R.drawable.ab_bg_black));
         setContentView(R.layout.cropimage);
 
         ImageView home = (ImageView) findViewById(android.R.id.home);
