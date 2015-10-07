@@ -344,9 +344,14 @@ public class CropImage extends MonitoredActivity {
             finish();
         } else if (myExtras != null && myExtras.containsKey("getcrop")) {
             Bundle extras = new Bundle();
-            extras.putInt("size", mCrop.getCropRect().right - mCrop.getCropRect().left);
-            extras.putInt("left", mCrop.getCropRect().left);
-            extras.putInt("top", mCrop.getCropRect().top);
+            int size = mCrop.getCropRect().right - mCrop.getCropRect().left;
+            int left = mCrop.getCropRect().left;
+            int top = mCrop.getCropRect().top;
+            double multiplier = mImage.getHeight() / mBitmap.getHeight();
+
+            extras.putInt("size", (int)(size * multiplier));
+            extras.putInt("left", (int)(left * multiplier));
+            extras.putInt("top", (int)(top * multiplier));
 
             if (myExtras.containsKey("dosave")) {
                 ByteArrayOutputStream bytes = new ByteArrayOutputStream();
