@@ -352,6 +352,8 @@ public class CropImage extends MonitoredActivity {
             extras.putInt("size", (int)(size * multiplier));
             extras.putInt("left", (int)(left * multiplier));
             extras.putInt("top", (int)(top * multiplier));
+            extras.putInt("originalWidth", mImage.getWidth());
+            extras.putInt("originalHeight", mImage.getHeight());
 
             if (myExtras.containsKey("dosave")) {
                 ByteArrayOutputStream bytes = new ByteArrayOutputStream();
