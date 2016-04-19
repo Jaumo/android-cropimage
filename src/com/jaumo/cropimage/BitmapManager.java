@@ -37,7 +37,7 @@ import java.util.WeakHashMap;
  */
 public class BitmapManager {
     private static final String TAG = "BitmapManager";
-    private static enum State {CANCEL, ALLOW}
+    private enum State {CANCEL, ALLOW}
     private static class ThreadStatus {
         public State mState = State.ALLOW;
         public BitmapFactory.Options mOptions;

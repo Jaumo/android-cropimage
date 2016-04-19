@@ -118,7 +118,7 @@ public class ImageManager {
     }
 
     // Location
-    public static enum DataLocation { NONE, INTERNAL, EXTERNAL, ALL }
+    public enum DataLocation { NONE, INTERNAL, EXTERNAL, ALL }
 
     // Inclusion
     public static final int INCLUDE_IMAGES = (1 << 0);

@@ -1,9 +1,10 @@
 buildscript {
     repositories {
-        maven { url 'http://repo1.maven.org/maven2' }
+        mavenCentral()
+        jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:1.0.0'
+        classpath 'com.android.tools.build:gradle:2.1.0-beta1'
     }
 }
 apply plugin: 'com.android.library'

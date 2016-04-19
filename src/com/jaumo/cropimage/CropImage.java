@@ -123,7 +123,7 @@ public class CropImage extends MonitoredActivity {
                 mAspectX = 1;
                 mAspectY = 1;
             }
-            mSaveUri = (Uri) extras.getParcelable(MediaStore.EXTRA_OUTPUT);
+            mSaveUri = extras.getParcelable(MediaStore.EXTRA_OUTPUT);
             if (mSaveUri != null) {
                 String outputFormatString = extras.getString("outputFormat");
                 if (outputFormatString != null) {
@@ -133,7 +133,7 @@ public class CropImage extends MonitoredActivity {
             } else {
                 mSetWallpaper = extras.getBoolean("setWallpaper");
             }
-            mBitmap = (Bitmap) extras.getParcelable("data");
+            mBitmap = extras.getParcelable("data");
             mAspectX = extras.getInt("aspectX");
             mAspectY = extras.getInt("aspectY");
             mOutputX = extras.getInt("outputX");
