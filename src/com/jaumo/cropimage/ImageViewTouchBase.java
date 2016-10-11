@@ -28,9 +28,17 @@ import android.widget.ImageView;
 
 abstract class ImageViewTouchBase extends ImageView {
 
+    static final float SCALE_RATE = 1.25F;
     @SuppressWarnings("unused")
     private static final String TAG = "ImageViewTouchBase";
+    // The current bitmap being displayed.
+    protected final RotateBitmap mBitmapDisplayed = new RotateBitmap(null);
+    // This is the final matrix which is computed as the concatentation
+    // of the base matrix and the supplementary matrix.
+    private final Matrix mDisplayMatrix = new Matrix();
 
+    // Temporary buffer used for getting the values out of a matrix.
+    private final float[] mMatrixValues = new float[9];
     // This is the base transformation which is used to show the image
     // initially.  The current computation for this shows the image in
     // it's entirety, letterboxing as needed.  One could choose to
@@ -39,39 +47,31 @@ abstract class ImageViewTouchBase extends ImageView {
     // This matrix is recomputed when we go from the thumbnail image to
     // the full size image.
     protected Matrix mBaseMatrix = new Matrix();
-
     // This is the supplementary transformation which reflects what
     // the user has done in terms of zooming and panning.
     //
     // This matrix remains the same when we go from the thumbnail image
     // to the full size image.
     protected Matrix mSuppMatrix = new Matrix();
-
-    // This is the final matrix which is computed as the concatentation
-    // of the base matrix and the supplementary matrix.
-    private final Matrix mDisplayMatrix = new Matrix();
-
-    // Temporary buffer used for getting the values out of a matrix.
-    private final float[] mMatrixValues = new float[9];
-
-    // The current bitmap being displayed.
-    protected final RotateBitmap mBitmapDisplayed = new RotateBitmap(null);
-
+    protected Handler mHandler = new Handler();
     int mThisWidth = -1, mThisHeight = -1;
-
     float mMaxZoom;
+    private Recycler mRecycler;
+    private Runnable mOnLayoutRunnable = null;
 
-    // ImageViewTouchBase will pass a Bitmap to the Recycler if it has finished
-    // its use of that Bitmap.
-    public interface Recycler {
-        void recycle(Bitmap b);
+    public ImageViewTouchBase(Context context) {
+        super(context);
+        init();
+    }
+
+    public ImageViewTouchBase(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        init();
     }
 
     public void setRecycler(Recycler r) {
         mRecycler = r;
     }
-
-    private Recycler mRecycler;
 
     @Override
     protected void onLayout(boolean changed, int left, int top,
@@ -114,8 +114,6 @@ abstract class ImageViewTouchBase extends ImageView {
         return super.onKeyUp(keyCode, event);
     }
 
-    protected Handler mHandler = new Handler();
-
     @Override
     public void setImageBitmap(Bitmap bitmap) {
         setImageBitmap(bitmap, 0);
@@ -141,20 +139,18 @@ abstract class ImageViewTouchBase extends ImageView {
         setImageBitmapResetBase(null, true);
     }
 
-    private Runnable mOnLayoutRunnable = null;
-
     // This function changes bitmap, reset base matrix according to the size
     // of the bitmap, and optionally reset the supplementary matrix.
     public void setImageBitmapResetBase(final Bitmap bitmap,
-            final boolean resetSupp) {
+                                        final boolean resetSupp) {
         setImageRotateBitmapResetBase(new RotateBitmap(bitmap), resetSupp);
     }
 
     public void setImageRotateBitmapResetBase(final RotateBitmap bitmap,
-            final boolean resetSupp) {
+                                              final boolean resetSupp) {
         final int viewWidth = getWidth();
 
-        if (viewWidth <= 0)  {
+        if (viewWidth <= 0) {
             mOnLayoutRunnable = new Runnable() {
                 public void run() {
                     setImageRotateBitmapResetBase(bitmap, resetSupp);
@@ -197,7 +193,7 @@ abstract class ImageViewTouchBase extends ImageView {
         m.mapRect(rect);
 
         float height = rect.height();
-        float width  = rect.width();
+        float width = rect.width();
 
         float deltaX = 0, deltaY = 0;
 
@@ -225,16 +221,6 @@ abstract class ImageViewTouchBase extends ImageView {
 
         postTranslate(deltaX, deltaY);
         setImageMatrix(getImageViewMatrix());
-    }
-
-    public ImageViewTouchBase(Context context) {
-        super(context);
-        init();
-    }
-
-    public ImageViewTouchBase(Context context, AttributeSet attrs) {
-        super(context, attrs);
-        init();
     }
 
     private void init() {
@@ -274,7 +260,7 @@ abstract class ImageViewTouchBase extends ImageView {
         matrix.postScale(scale, scale);
 
         matrix.postTranslate(
-                (viewWidth  - w * scale) / 2F,
+                (viewWidth - w * scale) / 2F,
                 (viewHeight - h * scale) / 2F);
     }
 
@@ -287,8 +273,6 @@ abstract class ImageViewTouchBase extends ImageView {
         return mDisplayMatrix;
     }
 
-    static final float SCALE_RATE = 1.25F;
-
     // Sets the maximum zoom, which is a scale relative to the base matrix. It
     // is calculated to show the image at 400% zoom regardless of screen or
     // image orientation. If in the future we decode the full 3 megapixel image,
@@ -298,7 +282,7 @@ abstract class ImageViewTouchBase extends ImageView {
             return 1F;
         }
 
-        float fw = (float) mBitmapDisplayed.getWidth()  / (float) mThisWidth;
+        float fw = (float) mBitmapDisplayed.getWidth() / (float) mThisWidth;
         float fh = (float) mBitmapDisplayed.getHeight() / (float) mThisHeight;
         float max = Math.min(fw, fh) * 3;
         return max;
@@ -403,5 +387,11 @@ abstract class ImageViewTouchBase extends ImageView {
     protected void panBy(float dx, float dy) {
         postTranslate(dx, dy);
         setImageMatrix(getImageViewMatrix());
+    }
+
+    // ImageViewTouchBase will pass a Bitmap to the Recycler if it has finished
+    // its use of that Bitmap.
+    public interface Recycler {
+        void recycle(Bitmap b);
     }
 }

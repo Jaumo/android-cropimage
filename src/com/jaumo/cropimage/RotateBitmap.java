@@ -34,12 +34,12 @@ public class RotateBitmap {
         mRotation = rotation % 360;
     }
 
-    public void setRotation(int rotation) {
-        mRotation = rotation;
-    }
-
     public int getRotation() {
         return mRotation;
+    }
+
+    public void setRotation(int rotation) {
+        mRotation = rotation;
     }
 
     public Bitmap getBitmap() {

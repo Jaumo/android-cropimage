@@ -16,9 +16,6 @@
 
 package com.jaumo.cropimage.gallery;
 
-import com.jaumo.cropimage.BitmapManager;
-import com.jaumo.cropimage.Util;
-
 import android.content.ContentResolver;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -26,6 +23,9 @@ import android.net.Uri;
 import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore.Images;
 import android.util.Log;
+
+import com.jaumo.cropimage.BitmapManager;
+import com.jaumo.cropimage.Util;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -39,27 +39,24 @@ import java.io.InputStream;
 public abstract class BaseImage implements IImage {
     private static final String TAG = "BaseImage";
     private static final int UNKNOWN_LENGTH = -1;
+    protected final int mIndex;
+    private final long mDateTaken;
+    private final String mDisplayName;
     protected ContentResolver mContentResolver;
-
     // Database field
     protected Uri mUri;
     protected long mId;
     protected String mDataPath;
     protected long mMiniThumbMagic;
-    protected final int mIndex;
     protected String mMimeType;
-    private final long mDateTaken;
-    private String mTitle;
-    private final String mDisplayName;
-
     protected BaseImageList mContainer;
-
+    private String mTitle;
     private int mWidth = UNKNOWN_LENGTH;
     private int mHeight = UNKNOWN_LENGTH;
 
     protected BaseImage(BaseImageList container, ContentResolver cr,
-            long id, int index, Uri uri, String dataPath, long miniThumbMagic,
-            String mimeType, long dateTaken, String title, String displayName) {
+                        long id, int index, Uri uri, String dataPath, long miniThumbMagic,
+                        String mimeType, long dateTaken, String title, String displayName) {
         mContainer = container;
         mContentResolver = cr;
         mId = id;
@@ -94,7 +91,7 @@ public abstract class BaseImage implements IImage {
     }
 
     public Bitmap fullSizeBitmap(int minSideLength, int maxNumberOfPixels,
-            boolean rotateAsNeeded, boolean useNative) {
+                                 boolean rotateAsNeeded, boolean useNative) {
         Uri url = mContainer.contentUri(mId);
         if (url == null) return null;
 

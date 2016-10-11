@@ -16,8 +16,6 @@
 
 package com.jaumo.cropimage.gallery;
 
-import com.jaumo.cropimage.Util;
-
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.graphics.Bitmap;
@@ -29,6 +27,8 @@ import android.provider.MediaStore.Images;
 import android.provider.MediaStore.Images.ImageColumns;
 import android.util.Log;
 
+import com.jaumo.cropimage.Util;
+
 import java.io.IOException;
 
 /**
@@ -36,15 +36,16 @@ import java.io.IOException;
  */
 public class Image extends BaseImage implements IImage {
     private static final String TAG = "BaseImage";
-
+    private static final String[] THUMB_PROJECTION = new String[]{
+            BaseColumns._ID,
+    };
     private ExifInterface mExif;
-
     private int mRotation;
 
     public Image(BaseImageList container, ContentResolver cr,
-            long id, int index, Uri uri, String dataPath, long miniThumbMagic,
-            String mimeType, long dateTaken, String title, String displayName,
-            int rotation) {
+                 long id, int index, Uri uri, String dataPath, long miniThumbMagic,
+                 String mimeType, long dateTaken, String title, String displayName,
+                 int rotation) {
         super(container, cr, id, index, uri, dataPath, miniThumbMagic,
                 mimeType, dateTaken, title, displayName);
         mRotation = rotation;
@@ -77,6 +78,7 @@ public class Image extends BaseImage implements IImage {
 
     /**
      * Replaces the tag if already there. Otherwise, adds to the exif tags.
+     *
      * @param tag
      * @param value
      */
@@ -133,6 +135,7 @@ public class Image extends BaseImage implements IImage {
 
     /**
      * Save the rotated image by updating the Exif "Orientation" tag.
+     *
      * @param degrees
      */
     public boolean rotateImageBy(int degrees) {
@@ -143,17 +146,13 @@ public class Image extends BaseImage implements IImage {
         return true;
     }
 
-    private static final String[] THUMB_PROJECTION = new String[] {
-        BaseColumns._ID,
-    };
-
     public Bitmap thumbBitmap(boolean rotateAsNeeded) {
         Bitmap bitmap = null;
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inDither = false;
         options.inPreferredConfig = Bitmap.Config.ARGB_8888;
         bitmap = Images.Thumbnails.getThumbnail(
-                    mContentResolver, mId, Images.Thumbnails.MINI_KIND, options);
+                mContentResolver, mId, Images.Thumbnails.MINI_KIND, options);
 
         if (bitmap != null && rotateAsNeeded) {
             bitmap = Util.rotate(bitmap, getDegreesRotated());

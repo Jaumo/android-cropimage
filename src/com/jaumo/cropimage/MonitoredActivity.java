@@ -25,27 +25,6 @@ public class MonitoredActivity extends NoSearchActivity {
     private final ArrayList<LifeCycleListener> mListeners =
             new ArrayList<LifeCycleListener>();
 
-    public interface LifeCycleListener {
-        void onActivityCreated(MonitoredActivity activity);
-        void onActivityDestroyed(MonitoredActivity activity);
-        void onActivityStarted(MonitoredActivity activity);
-        void onActivityStopped(MonitoredActivity activity);
-    }
-
-    public static class LifeCycleAdapter implements LifeCycleListener {
-        public void onActivityCreated(MonitoredActivity activity) {
-        }
-
-        public void onActivityDestroyed(MonitoredActivity activity) {
-        }
-
-        public void onActivityStarted(MonitoredActivity activity) {
-        }
-
-        public void onActivityStopped(MonitoredActivity activity) {
-        }
-    }
-
     public void addLifeCycleListener(LifeCycleListener listener) {
         if (mListeners.contains(listener)) return;
         mListeners.add(listener);
@@ -84,6 +63,30 @@ public class MonitoredActivity extends NoSearchActivity {
         super.onStop();
         for (LifeCycleListener listener : mListeners) {
             listener.onActivityStopped(this);
+        }
+    }
+
+    public interface LifeCycleListener {
+        void onActivityCreated(MonitoredActivity activity);
+
+        void onActivityDestroyed(MonitoredActivity activity);
+
+        void onActivityStarted(MonitoredActivity activity);
+
+        void onActivityStopped(MonitoredActivity activity);
+    }
+
+    public static class LifeCycleAdapter implements LifeCycleListener {
+        public void onActivityCreated(MonitoredActivity activity) {
+        }
+
+        public void onActivityDestroyed(MonitoredActivity activity) {
+        }
+
+        public void onActivityStarted(MonitoredActivity activity) {
+        }
+
+        public void onActivityStopped(MonitoredActivity activity) {
         }
     }
 }

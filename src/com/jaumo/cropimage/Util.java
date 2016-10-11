@@ -41,12 +41,14 @@ import java.io.IOException;
  * Collection of utility functions used in this package.
  */
 public class Util {
-    private static final String TAG = "Util";
     public static final int DIRECTION_LEFT = 0;
     public static final int DIRECTION_RIGHT = 1;
     public static final int DIRECTION_UP = 2;
     public static final int DIRECTION_DOWN = 3;
-
+    // Whether we should recycle the input (unless the output is the input).
+    public static final boolean RECYCLE_INPUT = true;
+    public static final boolean NO_RECYCLE_INPUT = false;
+    private static final String TAG = "Util";
     private static OnClickListener sNullOnClickListener;
 
     private Util() {
@@ -93,7 +95,7 @@ public class Util {
      * request is 3. So we round up the sample size to avoid OOM.
      */
     public static int computeSampleSize(BitmapFactory.Options options,
-            int minSideLength, int maxNumOfPixels) {
+                                        int minSideLength, int maxNumOfPixels) {
         int initialSize = computeInitialSampleSize(options, minSideLength,
                 maxNumOfPixels);
 
@@ -111,7 +113,7 @@ public class Util {
     }
 
     private static int computeInitialSampleSize(BitmapFactory.Options options,
-            int minSideLength, int maxNumOfPixels) {
+                                                int minSideLength, int maxNumOfPixels) {
         double w = options.outWidth;
         double h = options.outHeight;
 
@@ -119,7 +121,7 @@ public class Util {
                 (int) Math.ceil(Math.sqrt(w * h / maxNumOfPixels));
         int upperBound = (minSideLength == IImage.UNCONSTRAINED) ? 128 :
                 (int) Math.min(Math.floor(w / minSideLength),
-                Math.floor(h / minSideLength));
+                        Math.floor(h / minSideLength));
 
         if (upperBound < lowerBound) {
             // return the larger one when there is no overlapping zone.
@@ -135,10 +137,6 @@ public class Util {
             return upperBound;
         }
     }
-
-    // Whether we should recycle the input (unless the output is the input).
-    public static final boolean RECYCLE_INPUT = true;
-    public static final boolean NO_RECYCLE_INPUT = false;
 
     public static Bitmap transform(Matrix scaler,
                                    Bitmap source,
@@ -166,7 +164,7 @@ public class Util {
                     deltaYHalf,
                     deltaXHalf + Math.min(targetWidth, source.getWidth()),
                     deltaYHalf + Math.min(targetHeight, source.getHeight()));
-            int dstX = (targetWidth  - src.width())  / 2;
+            int dstX = (targetWidth - src.width()) / 2;
             int dstY = (targetHeight - src.height()) / 2;
             Rect dst = new Rect(
                     dstX,
@@ -183,7 +181,7 @@ public class Util {
         float bitmapHeightF = source.getHeight();
 
         float bitmapAspect = bitmapWidthF / bitmapHeightF;
-        float viewAspect   = (float) targetWidth / targetHeight;
+        float viewAspect = (float) targetWidth / targetHeight;
 
         if (bitmapAspect > viewAspect) {
             float scale = targetHeight / bitmapHeightF;
@@ -233,7 +231,7 @@ public class Util {
         return b2;
     }
 
-    public static <T>  int indexOf(T [] array, T s) {
+    public static <T> int indexOf(T[] array, T s) {
         for (int i = 0; i < array.length; i++) {
             if (array[i].equals(s)) {
                 return i;
@@ -266,7 +264,7 @@ public class Util {
      * @param uri
      */
     public static Bitmap makeBitmap(int minSideLength, int maxNumOfPixels,
-            Uri uri, ContentResolver cr, boolean useNative) {
+                                    Uri uri, ContentResolver cr, boolean useNative) {
         ParcelFileDescriptor input = null;
         try {
             input = cr.openFileDescriptor(uri, "r");
@@ -284,7 +282,7 @@ public class Util {
     }
 
     public static Bitmap makeBitmap(int minSideLength, int maxNumOfPixels,
-            ParcelFileDescriptor pfd, boolean useNative) {
+                                    ParcelFileDescriptor pfd, boolean useNative) {
         BitmapFactory.Options options = null;
         if (useNative) {
             options = createNativeAllocOptions();
@@ -294,8 +292,8 @@ public class Util {
     }
 
     public static Bitmap makeBitmap(int minSideLength, int maxNumOfPixels,
-            Uri uri, ContentResolver cr, ParcelFileDescriptor pfd,
-            BitmapFactory.Options options) {
+                                    Uri uri, ContentResolver cr, ParcelFileDescriptor pfd,
+                                    BitmapFactory.Options options) {
         try {
             if (pfd == null) pfd = makeInputStream(uri, cr);
             if (pfd == null) return null;
@@ -353,6 +351,30 @@ public class Util {
         return a == b || a.equals(b);
     }
 
+    public static void startBackgroundJob(MonitoredActivity activity,
+                                          String title, String message, Runnable job, Handler handler) {
+        // Make the progress dialog uncancelable, so that we can gurantee
+        // the thread will be done before the activity getting destroyed.
+        ProgressDialog dialog = ProgressDialog.show(
+                activity, title, message, true, false);
+        new Thread(new BackgroundJob(activity, job, dialog, handler)).start();
+    }
+
+    // Returns an intent which is used for "set as" menu items.
+    public static Intent createSetAsIntent(IImage image) {
+        Uri u = image.fullSizeImageUri();
+        Intent intent = new Intent(Intent.ACTION_ATTACH_DATA);
+        intent.setDataAndType(u, image.getMimeType());
+        intent.putExtra("mimeType", image.getMimeType());
+        return intent;
+    }
+
+    // Returns Options that set the puregeable flag for Bitmap decode.
+    public static BitmapFactory.Options createNativeAllocOptions() {
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        return options;
+    }
+
     private static class BackgroundJob
             extends MonitoredActivity.LifeCycleAdapter implements Runnable {
 
@@ -368,7 +390,7 @@ public class Util {
         };
 
         public BackgroundJob(MonitoredActivity activity, Runnable job,
-                ProgressDialog dialog, Handler handler) {
+                             ProgressDialog dialog, Handler handler) {
             mActivity = activity;
             mDialog = dialog;
             mJob = job;
@@ -402,29 +424,5 @@ public class Util {
         public void onActivityStarted(MonitoredActivity activity) {
             mDialog.show();
         }
-    }
-
-    public static void startBackgroundJob(MonitoredActivity activity,
-            String title, String message, Runnable job, Handler handler) {
-        // Make the progress dialog uncancelable, so that we can gurantee
-        // the thread will be done before the activity getting destroyed.
-        ProgressDialog dialog = ProgressDialog.show(
-                activity, title, message, true, false);
-        new Thread(new BackgroundJob(activity, job, dialog, handler)).start();
-    }
-
-    // Returns an intent which is used for "set as" menu items.
-    public static Intent createSetAsIntent(IImage image) {
-        Uri u = image.fullSizeImageUri();
-        Intent intent = new Intent(Intent.ACTION_ATTACH_DATA);
-        intent.setDataAndType(u, image.getMimeType());
-        intent.putExtra("mimeType", image.getMimeType());
-        return intent;
-    }
-
-    // Returns Options that set the puregeable flag for Bitmap decode.
-    public static BitmapFactory.Options createNativeAllocOptions() {
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        return options;
     }
 }

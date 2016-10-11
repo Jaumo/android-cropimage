@@ -16,14 +16,6 @@
 
 package com.jaumo.cropimage;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.concurrent.CountDownLatch;
-
 import android.app.WallpaperManager;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -54,14 +46,24 @@ import android.widget.Toast;
 
 import com.jaumo.cropimage.gallery.IImage;
 import com.jaumo.cropimage.gallery.IImageList;
-import com.jaumo.cropimage.R;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * The activity can crop specific region of interest from an image.
  */
 public class CropImage extends MonitoredActivity {
     private static final String TAG = "CropImage";
-
+    private final Handler mHandler = new Handler();
+    boolean mWaitingToPick; // Whether we are wait the user to pick a face.
+    boolean mSaving;  // Whether the "save" button is already clicked.
+    HighlightView mCrop;
     // These are various options can be specified in the intent.
     private Bitmap.CompressFormat mOutputFormat =
             Bitmap.CompressFormat.JPEG; // only used with mSaveUri
@@ -70,419 +72,15 @@ public class CropImage extends MonitoredActivity {
     private int mAspectX, mAspectY;
     private boolean mDoFaceDetection = true;
     private boolean mCircleCrop = false;
-    private final Handler mHandler = new Handler();
-
     // These options specifiy the output image size and whether we should
     // scale the output to fit it (or just crop it).
     private int mOutputX, mOutputY;
     private boolean mScale;
     private boolean mScaleUp = true;
-
     private String mSaveLabel = "";
-
-    boolean mWaitingToPick; // Whether we are wait the user to pick a face.
-    boolean mSaving;  // Whether the "save" button is already clicked.
-
     private CropImageView mImageView;
     private ContentResolver mContentResolver;
-
     private Bitmap mBitmap;
-    HighlightView mCrop;
-
-    private IImageList mAllImages;
-    private IImage mImage;
-
-    @Override
-    public void onCreate(Bundle icicle) {
-        supportRequestWindowFeature(Window.FEATURE_ACTION_BAR_OVERLAY);
-        super.onCreate(icicle);
-        mContentResolver = getContentResolver();
-
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setBackgroundDrawable(getResources().getDrawable(R.drawable.ab_bg_black));
-        setContentView(R.layout.cropimage);
-
-        ImageView home = (ImageView) findViewById(android.R.id.home);
-        if (home != null) {
-            home.setAlpha(70);
-        }
-//        ImageView home2 = (ImageView) findViewById(R.id.abs__home);
-//        if (home2 != null) {
-//            home2.setAlpha(70);
-//        }
-
-        mImageView = (CropImageView) findViewById(R.id.image);
-        mSaveLabel = getString(R.string.crop_save_text);
-
-        Intent intent = getIntent();
-        Bundle extras = intent.getExtras();
-
-        if (extras != null) {
-            if (extras.getString("circleCrop") != null) {
-                mCircleCrop = true;
-                mAspectX = 1;
-                mAspectY = 1;
-            }
-            mSaveUri = extras.getParcelable(MediaStore.EXTRA_OUTPUT);
-            if (mSaveUri != null) {
-                String outputFormatString = extras.getString("outputFormat");
-                if (outputFormatString != null) {
-                    mOutputFormat = Bitmap.CompressFormat.valueOf(
-                            outputFormatString);
-                }
-            } else {
-                mSetWallpaper = extras.getBoolean("setWallpaper");
-            }
-            mBitmap = extras.getParcelable("data");
-            mAspectX = extras.getInt("aspectX");
-            mAspectY = extras.getInt("aspectY");
-            mOutputX = extras.getInt("outputX");
-            mOutputY = extras.getInt("outputY");
-            mScale = extras.getBoolean("scale", true);
-            mScaleUp = extras.getBoolean("scaleUpIfNeeded", true);
-            mDoFaceDetection = extras.containsKey("noFaceDetection")
-                    ? !extras.getBoolean("noFaceDetection")
-                    : true;
-            mSaveLabel = extras.getString("saveLabel");
-            if (null == mSaveLabel) {
-                mSaveLabel = getString(R.string.crop_save_text);
-            }
-        }
-
-        if (mBitmap == null) {
-            Uri target = intent.getData();
-            mAllImages = ImageManager.makeImageList(mContentResolver, target,
-                    ImageManager.SORT_ASCENDING);
-            mImage = mAllImages.getImageForUri(target);
-            if (mImage != null) {
-                // Don't read in really large bitmaps. Use the (big) thumbnail
-                // instead.
-                // TODO when saving the resulting bitmap use the
-                // decode/crop/encode api so we don't lose any resolution.
-                mBitmap = mImage.thumbBitmap(IImage.ROTATE_AS_NEEDED);
-            }
-        }
-
-        if (mBitmap == null) {
-            finish();
-            return;
-        }
-
-        // Make UI fullscreen.
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-
-        startFaceDetection();
-    }
-
-
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuItem menu1 = menu.add(0, 0, 0, mSaveLabel);
-        menu1.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS | MenuItem.SHOW_AS_ACTION_WITH_TEXT);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == 0) {
-            onSaveClicked();
-        }
-        else if (item.getItemId() == android.R.id.home) {
-            setResult(RESULT_CANCELED);
-            finish();
-        }
-
-        return true;
-    }
-
-    private void startFaceDetection() {
-        if (isFinishing()) {
-            return;
-        }
-
-        mImageView.setImageBitmapResetBase(mBitmap, true);
-
-        Util.startBackgroundJob(this, null,
-                getResources().getString(R.string.runningFaceDetection),
-                new Runnable() {
-            public void run() {
-                final CountDownLatch latch = new CountDownLatch(1);
-                final Bitmap b = (mImage != null)
-                        ? mImage.fullSizeBitmap(IImage.UNCONSTRAINED,
-                        1024 * 1024)
-                        : mBitmap;
-                mHandler.post(new Runnable() {
-                    public void run() {
-                        if (b != mBitmap && b != null) {
-                            mImageView.setImageBitmapResetBase(b, true);
-                            mBitmap.recycle();
-                            mBitmap = b;
-                        }
-                        if (mImageView.getScale() == 1F) {
-                            mImageView.center(true, true);
-                        }
-                        latch.countDown();
-                    }
-                });
-                try {
-                    latch.await();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-                mRunFaceDetection.run();
-            }
-        }, mHandler);
-    }
-
-    private void onSaveClicked() {
-        // TODO this code needs to change to use the decode/crop/encode single
-        // step api so that we don't require that the whole (possibly large)
-        // bitmap doesn't have to be read into memory
-        if (mCrop == null) {
-            return;
-        }
-
-        if ((mCrop.mCropRect.right - mCrop.mCropRect.left) < 80) {
-            Toast.makeText(this, R.string.crop_too_small, Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        if (mSaving) return;
-        mSaving = true;
-
-        Bitmap croppedImage;
-
-        // If the output is required to a specific size, create an new image
-        // with the cropped image in the center and the extra space filled.
-        if (mOutputX != 0 && mOutputY != 0 && !mScale) {
-            // Don't scale the image but instead fill it so it's the
-            // required dimension
-            croppedImage = Bitmap.createBitmap(mOutputX, mOutputY,
-                    Bitmap.Config.RGB_565);
-            Canvas canvas = new Canvas(croppedImage);
-
-            Rect srcRect = mCrop.getCropRect();
-            Rect dstRect = new Rect(0, 0, mOutputX, mOutputY);
-
-            int dx = (srcRect.width() - dstRect.width()) / 2;
-            int dy = (srcRect.height() - dstRect.height()) / 2;
-
-            // If the srcRect is too big, use the center part of it.
-            srcRect.inset(Math.max(0, dx), Math.max(0, dy));
-
-            // If the dstRect is too big, use the center part of it.
-            dstRect.inset(Math.max(0, -dx), Math.max(0, -dy));
-
-            // Draw the cropped bitmap in the center
-            canvas.drawBitmap(mBitmap, srcRect, dstRect, null);
-
-            // Release bitmap memory as soon as possible
-            mImageView.clear();
-            mBitmap.recycle();
-        } else {
-            Rect r = mCrop.getCropRect();
-
-            int width = r.width();
-            int height = r.height();
-
-            // If we are circle cropping, we want alpha channel, which is the
-            // third param here.
-            try {
-                croppedImage = Bitmap.createBitmap(width, height,
-                        mCircleCrop
-                                ? Bitmap.Config.ARGB_8888
-                                : Bitmap.Config.RGB_565);
-            }
-            catch (OutOfMemoryError e) {
-                Toast.makeText(this, R.string.out_of_memory, Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            Canvas canvas = new Canvas(croppedImage);
-            Rect dstRect = new Rect(0, 0, width, height);
-            canvas.drawBitmap(mBitmap, r, dstRect, null);
-
-            // Release bitmap memory as soon as possible
-            mImageView.clear();
-            mBitmap.recycle();
-
-            if (mCircleCrop) {
-                // OK, so what's all this about?
-                // Bitmaps are inherently rectangular but we want to return
-                // something that's basically a circle.  So we fill in the
-                // area around the circle with alpha.  Note the all important
-                // PortDuff.Mode.CLEAR.
-                Canvas c = new Canvas(croppedImage);
-                Path p = new Path();
-                p.addCircle(width / 2F, height / 2F, width / 2F,
-                        Path.Direction.CW);
-                c.clipPath(p, Region.Op.DIFFERENCE);
-                c.drawColor(0x00000000, PorterDuff.Mode.CLEAR);
-            }
-
-            // If the required dimension is specified, scale the image.
-            if (mOutputX != 0 && mOutputY != 0 && mScale) {
-                croppedImage = Util.transform(new Matrix(), croppedImage,
-                        mOutputX, mOutputY, mScaleUp, Util.RECYCLE_INPUT);
-            }
-        }
-
-        mImageView.setImageBitmapResetBase(croppedImage, true);
-        mImageView.center(true, true);
-        mImageView.mHighlightViews.clear();
-
-        // Return the cropped image directly or save it to the specified URI.
-        Bundle myExtras = getIntent().getExtras();
-        if (myExtras != null && (myExtras.getParcelable("data") != null
-                || myExtras.getBoolean("return-data"))) {
-            Bundle extras = new Bundle();
-            extras.putParcelable("data", croppedImage);
-
-            setResult(RESULT_OK,
-                    (new Intent()).setAction("inline-data").putExtras(extras));
-            finish();
-        } else if (myExtras != null && myExtras.containsKey("getcrop")) {
-            Bundle extras = new Bundle();
-            int size = mCrop.getCropRect().right - mCrop.getCropRect().left;
-            int left = mCrop.getCropRect().left;
-            int top = mCrop.getCropRect().top;
-            double multiplier = mImage.getHeight() / mBitmap.getHeight();
-
-            extras.putInt("size", (int)(size * multiplier));
-            extras.putInt("left", (int)(left * multiplier));
-            extras.putInt("top", (int)(top * multiplier));
-            extras.putInt("originalWidth", mImage.getWidth());
-            extras.putInt("originalHeight", mImage.getHeight());
-
-            if (myExtras.containsKey("dosave")) {
-                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-                croppedImage.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
-
-                //you can create a new file name "test.jpg" in sdcard folder.
-                File f = new File(mSaveUri.getPath());
-                try {
-                    f.createNewFile();
-                    //write the bytes in file
-                    FileOutputStream fo = new FileOutputStream(f);
-                    fo.write(bytes.toByteArray());
-                } catch (IOException e) {
-                    Log.e("", "", e);
-                }
-             }
-
-             setResult(RESULT_OK,
-                     (new Intent()).setAction("inline-data").putExtras(extras));
-             finish();
-        } else {
-            final Bitmap b = croppedImage;
-            final int msdId = mSetWallpaper
-                    ? R.string.wallpaper
-                    : R.string.savingImage;
-            Util.startBackgroundJob(this, null,
-                    getResources().getString(msdId),
-                    new Runnable() {
-                public void run() {
-                    saveOutput(b);
-                }
-            }, mHandler);
-        }
-    }
-
-    private void saveOutput(Bitmap croppedImage) {
-        if (mSaveUri != null) {
-            OutputStream outputStream = null;
-            try {
-                outputStream = mContentResolver.openOutputStream(mSaveUri);
-                if (outputStream != null) {
-                    croppedImage.compress(mOutputFormat, 75, outputStream);
-                }
-            } catch (IOException ex) {
-                // TODO: report error to caller
-                Log.e(TAG, "Cannot open file: " + mSaveUri, ex);
-            } finally {
-                Util.closeSilently(outputStream);
-            }
-            Bundle extras = new Bundle();
-            setResult(RESULT_OK, new Intent(mSaveUri.toString())
-                    .putExtras(extras));
-        } else if (mSetWallpaper) {
-            try {
-                WallpaperManager.getInstance(this).setBitmap(croppedImage);
-                setResult(RESULT_OK);
-            } catch (IOException e) {
-                Log.e(TAG, "Failed to set wallpaper.", e);
-                setResult(RESULT_CANCELED);
-            }
-        } else {
-            Bundle extras = new Bundle();
-            extras.putString("rect", mCrop.getCropRect().toString());
-
-            File oldPath = new File(mImage.getDataPath());
-            File directory = new File(oldPath.getParent());
-
-            int x = 0;
-            String fileName = oldPath.getName();
-            fileName = fileName.substring(0, fileName.lastIndexOf("."));
-
-            // Try file-1.jpg, file-2.jpg, ... until we find a filename which
-            // does not exist yet.
-            while (true) {
-                x += 1;
-                String candidate = directory.toString()
-                        + "/" + fileName + "-" + x + ".jpg";
-                boolean exists = (new File(candidate)).exists();
-                if (!exists) {
-                    break;
-                }
-            }
-
-            try {
-                int[] degree = new int[1];
-                Uri newUri = ImageManager.addImage(
-                        mContentResolver,
-                        mImage.getTitle(),
-                        mImage.getDateTaken(),
-                        null,    // TODO this null is going to cause us to lose
-                                 // the location (gps).
-                        directory.toString(), fileName + "-" + x + ".jpg",
-                        croppedImage, null,
-                        degree);
-
-                setResult(RESULT_OK, new Intent()
-                        .setAction(newUri.toString())
-                        .putExtras(extras));
-            } catch (Exception ex) {
-                // basically ignore this or put up
-                // some ui saying we failed
-                Log.e(TAG, "store image fail, continue anyway", ex);
-            }
-        }
-
-        final Bitmap b = croppedImage;
-        mHandler.post(new Runnable() {
-            public void run() {
-                mImageView.clear();
-                b.recycle();
-            }
-        });
-
-        finish();
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-    }
-
-    @Override
-    protected void onDestroy() {
-        if (mAllImages != null) {
-            mAllImages.close();
-        }
-        super.onDestroy();
-    }
-
     Runnable mRunFaceDetection = new Runnable() {
         @SuppressWarnings("hiding")
         float mScale = 1F;
@@ -521,16 +119,16 @@ public class CropImage extends MonitoredActivity {
 
             if (faceRect.right > imageRect.right) {
                 faceRect.inset(faceRect.right - imageRect.right,
-                               faceRect.right - imageRect.right);
+                        faceRect.right - imageRect.right);
             }
 
             if (faceRect.bottom > imageRect.bottom) {
                 faceRect.inset(faceRect.bottom - imageRect.bottom,
-                               faceRect.bottom - imageRect.bottom);
+                        faceRect.bottom - imageRect.bottom);
             }
 
             hv.setup(mImageMatrix, imageRect, faceRect, mCircleCrop,
-                     mAspectX != 0 && mAspectY != 0);
+                    mAspectX != 0 && mAspectY != 0);
 
             mImageView.add(hv);
         }
@@ -561,7 +159,7 @@ public class CropImage extends MonitoredActivity {
 
             RectF cropRect = new RectF(x, y, x + cropWidth, y + cropHeight);
             hv.setup(mImageMatrix, imageRect, cropRect, mCircleCrop,
-                     mAspectX != 0 && mAspectY != 0);
+                    mAspectX != 0 && mAspectY != 0);
             mImageView.add(hv);
         }
 
@@ -623,6 +221,393 @@ public class CropImage extends MonitoredActivity {
             });
         }
     };
+    private IImageList mAllImages;
+    private IImage mImage;
+
+    @Override
+    public void onCreate(Bundle icicle) {
+        supportRequestWindowFeature(Window.FEATURE_ACTION_BAR_OVERLAY);
+        super.onCreate(icicle);
+        mContentResolver = getContentResolver();
+
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setBackgroundDrawable(getResources().getDrawable(R.drawable.ab_bg_black));
+        setContentView(R.layout.cropimage);
+
+        ImageView home = (ImageView) findViewById(android.R.id.home);
+        if (home != null) {
+            home.setAlpha(70);
+        }
+//        ImageView home2 = (ImageView) findViewById(R.id.abs__home);
+//        if (home2 != null) {
+//            home2.setAlpha(70);
+//        }
+
+        mImageView = (CropImageView) findViewById(R.id.image);
+        mSaveLabel = getString(R.string.crop_save_text);
+
+        Intent intent = getIntent();
+        Bundle extras = intent.getExtras();
+
+        if (extras != null) {
+            if (extras.getString("circleCrop") != null) {
+                mCircleCrop = true;
+                mAspectX = 1;
+                mAspectY = 1;
+            }
+            mSaveUri = extras.getParcelable(MediaStore.EXTRA_OUTPUT);
+            if (mSaveUri != null) {
+                String outputFormatString = extras.getString("outputFormat");
+                if (outputFormatString != null) {
+                    mOutputFormat = Bitmap.CompressFormat.valueOf(
+                            outputFormatString);
+                }
+            } else {
+                mSetWallpaper = extras.getBoolean("setWallpaper");
+            }
+            mBitmap = extras.getParcelable("data");
+            mAspectX = extras.getInt("aspectX");
+            mAspectY = extras.getInt("aspectY");
+            mOutputX = extras.getInt("outputX");
+            mOutputY = extras.getInt("outputY");
+            mScale = extras.getBoolean("scale", true);
+            mScaleUp = extras.getBoolean("scaleUpIfNeeded", true);
+            mDoFaceDetection = !extras.containsKey("noFaceDetection") || !extras.getBoolean("noFaceDetection");
+            mSaveLabel = extras.getString("saveLabel");
+            if (null == mSaveLabel) {
+                mSaveLabel = getString(R.string.crop_save_text);
+            }
+        }
+
+        if (mBitmap == null) {
+            Uri target = intent.getData();
+            mAllImages = ImageManager.makeImageList(mContentResolver, target,
+                    ImageManager.SORT_ASCENDING);
+            mImage = mAllImages.getImageForUri(target);
+            if (mImage != null) {
+                // Don't read in really large bitmaps. Use the (big) thumbnail
+                // instead.
+                // TODO when saving the resulting bitmap use the
+                // decode/crop/encode api so we don't lose any resolution.
+                mBitmap = mImage.thumbBitmap(IImage.ROTATE_AS_NEEDED);
+            }
+        }
+
+        if (mBitmap == null) {
+            finish();
+            return;
+        }
+
+        // Make UI fullscreen.
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+        startFaceDetection();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuItem menu1 = menu.add(0, 0, 0, mSaveLabel);
+        menu1.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS | MenuItem.SHOW_AS_ACTION_WITH_TEXT);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == 0) {
+            onSaveClicked();
+        } else if (item.getItemId() == android.R.id.home) {
+            setResult(RESULT_CANCELED);
+            finish();
+        }
+
+        return true;
+    }
+
+    private void startFaceDetection() {
+        if (isFinishing()) {
+            return;
+        }
+
+        mImageView.setImageBitmapResetBase(mBitmap, true);
+
+        Util.startBackgroundJob(this, null,
+                getResources().getString(R.string.runningFaceDetection),
+                new Runnable() {
+                    public void run() {
+                        final CountDownLatch latch = new CountDownLatch(1);
+                        final Bitmap b = (mImage != null)
+                                ? mImage.fullSizeBitmap(IImage.UNCONSTRAINED,
+                                1024 * 1024)
+                                : mBitmap;
+                        mHandler.post(new Runnable() {
+                            public void run() {
+                                if (b != mBitmap && b != null) {
+                                    mImageView.setImageBitmapResetBase(b, true);
+                                    mBitmap.recycle();
+                                    mBitmap = b;
+                                }
+                                if (mImageView.getScale() == 1F) {
+                                    mImageView.center(true, true);
+                                }
+                                latch.countDown();
+                            }
+                        });
+                        try {
+                            latch.await();
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                        mRunFaceDetection.run();
+                    }
+                }, mHandler);
+    }
+
+    private void onSaveClicked() {
+        // TODO this code needs to change to use the decode/crop/encode single
+        // step api so that we don't require that the whole (possibly large)
+        // bitmap doesn't have to be read into memory
+        if (mCrop == null) {
+            return;
+        }
+
+        if ((mCrop.mCropRect.right - mCrop.mCropRect.left) < 80) {
+            Toast.makeText(this, R.string.crop_too_small, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (mSaving) return;
+        mSaving = true;
+
+        Bitmap croppedImage;
+
+        // If the output is required to a specific size, create an new image
+        // with the cropped image in the center and the extra space filled.
+        if (mOutputX != 0 && mOutputY != 0 && !mScale) {
+            // Don't scale the image but instead fill it so it's the
+            // required dimension
+            croppedImage = Bitmap.createBitmap(mOutputX, mOutputY,
+                    Bitmap.Config.RGB_565);
+            Canvas canvas = new Canvas(croppedImage);
+
+            Rect srcRect = mCrop.getCropRect();
+            Rect dstRect = new Rect(0, 0, mOutputX, mOutputY);
+
+            int dx = (srcRect.width() - dstRect.width()) / 2;
+            int dy = (srcRect.height() - dstRect.height()) / 2;
+
+            // If the srcRect is too big, use the center part of it.
+            srcRect.inset(Math.max(0, dx), Math.max(0, dy));
+
+            // If the dstRect is too big, use the center part of it.
+            dstRect.inset(Math.max(0, -dx), Math.max(0, -dy));
+
+            // Draw the cropped bitmap in the center
+            canvas.drawBitmap(mBitmap, srcRect, dstRect, null);
+
+            // Release bitmap memory as soon as possible
+            mImageView.clear();
+            mBitmap.recycle();
+        } else {
+            Rect r = mCrop.getCropRect();
+
+            int width = r.width();
+            int height = r.height();
+
+            // If we are circle cropping, we want alpha channel, which is the
+            // third param here.
+            try {
+                croppedImage = Bitmap.createBitmap(width, height,
+                        mCircleCrop
+                                ? Bitmap.Config.ARGB_8888
+                                : Bitmap.Config.RGB_565);
+            } catch (OutOfMemoryError e) {
+                Toast.makeText(this, R.string.out_of_memory, Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Canvas canvas = new Canvas(croppedImage);
+            Rect dstRect = new Rect(0, 0, width, height);
+            canvas.drawBitmap(mBitmap, r, dstRect, null);
+
+            // Release bitmap memory as soon as possible
+            mImageView.clear();
+            mBitmap.recycle();
+
+            if (mCircleCrop) {
+                // OK, so what's all this about?
+                // Bitmaps are inherently rectangular but we want to return
+                // something that's basically a circle.  So we fill in the
+                // area around the circle with alpha.  Note the all important
+                // PortDuff.Mode.CLEAR.
+                Canvas c = new Canvas(croppedImage);
+                Path p = new Path();
+                p.addCircle(width / 2F, height / 2F, width / 2F,
+                        Path.Direction.CW);
+                c.clipPath(p, Region.Op.DIFFERENCE);
+                c.drawColor(0x00000000, PorterDuff.Mode.CLEAR);
+            }
+
+            // If the required dimension is specified, scale the image.
+            if (mOutputX != 0 && mOutputY != 0 && mScale) {
+                croppedImage = Util.transform(new Matrix(), croppedImage,
+                        mOutputX, mOutputY, mScaleUp, Util.RECYCLE_INPUT);
+            }
+        }
+
+        mImageView.setImageBitmapResetBase(croppedImage, true);
+        mImageView.center(true, true);
+        mImageView.mHighlightViews.clear();
+
+        // Return the cropped image directly or save it to the specified URI.
+        Bundle myExtras = getIntent().getExtras();
+        if (myExtras != null && (myExtras.getParcelable("data") != null
+                || myExtras.getBoolean("return-data"))) {
+            Bundle extras = new Bundle();
+            extras.putParcelable("data", croppedImage);
+
+            setResult(RESULT_OK,
+                    (new Intent()).setAction("inline-data").putExtras(extras));
+            finish();
+        } else if (myExtras != null && myExtras.containsKey("getcrop")) {
+            Bundle extras = new Bundle();
+            int size = mCrop.getCropRect().right - mCrop.getCropRect().left;
+            int left = mCrop.getCropRect().left;
+            int top = mCrop.getCropRect().top;
+            double multiplier = mImage.getHeight() / mBitmap.getHeight();
+
+            extras.putInt("size", (int) (size * multiplier));
+            extras.putInt("left", (int) (left * multiplier));
+            extras.putInt("top", (int) (top * multiplier));
+            extras.putInt("originalWidth", mImage.getWidth());
+            extras.putInt("originalHeight", mImage.getHeight());
+
+            if (myExtras.containsKey("dosave")) {
+                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                croppedImage.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
+
+                //you can create a new file name "test.jpg" in sdcard folder.
+                File f = new File(mSaveUri.getPath());
+                try {
+                    f.createNewFile();
+                    //write the bytes in file
+                    FileOutputStream fo = new FileOutputStream(f);
+                    fo.write(bytes.toByteArray());
+                } catch (IOException e) {
+                    Log.e("", "", e);
+                }
+            }
+
+            setResult(RESULT_OK,
+                    (new Intent()).setAction("inline-data").putExtras(extras));
+            finish();
+        } else {
+            final Bitmap b = croppedImage;
+            final int msdId = mSetWallpaper
+                    ? R.string.wallpaper
+                    : R.string.savingImage;
+            Util.startBackgroundJob(this, null,
+                    getResources().getString(msdId),
+                    new Runnable() {
+                        public void run() {
+                            saveOutput(b);
+                        }
+                    }, mHandler);
+        }
+    }
+
+    private void saveOutput(Bitmap croppedImage) {
+        if (mSaveUri != null) {
+            OutputStream outputStream = null;
+            try {
+                outputStream = mContentResolver.openOutputStream(mSaveUri);
+                if (outputStream != null) {
+                    croppedImage.compress(mOutputFormat, 75, outputStream);
+                }
+            } catch (IOException ex) {
+                // TODO: report error to caller
+                Log.e(TAG, "Cannot open file: " + mSaveUri, ex);
+            } finally {
+                Util.closeSilently(outputStream);
+            }
+            Bundle extras = new Bundle();
+            setResult(RESULT_OK, new Intent(mSaveUri.toString())
+                    .putExtras(extras));
+        } else if (mSetWallpaper) {
+            try {
+                WallpaperManager.getInstance(this).setBitmap(croppedImage);
+                setResult(RESULT_OK);
+            } catch (IOException e) {
+                Log.e(TAG, "Failed to set wallpaper.", e);
+                setResult(RESULT_CANCELED);
+            }
+        } else {
+            Bundle extras = new Bundle();
+            extras.putString("rect", mCrop.getCropRect().toString());
+
+            File oldPath = new File(mImage.getDataPath());
+            File directory = new File(oldPath.getParent());
+
+            int x = 0;
+            String fileName = oldPath.getName();
+            fileName = fileName.substring(0, fileName.lastIndexOf("."));
+
+            // Try file-1.jpg, file-2.jpg, ... until we find a filename which
+            // does not exist yet.
+            while (true) {
+                x += 1;
+                String candidate = directory.toString()
+                        + "/" + fileName + "-" + x + ".jpg";
+                boolean exists = (new File(candidate)).exists();
+                if (!exists) {
+                    break;
+                }
+            }
+
+            try {
+                int[] degree = new int[1];
+                Uri newUri = ImageManager.addImage(
+                        mContentResolver,
+                        mImage.getTitle(),
+                        mImage.getDateTaken(),
+                        null,    // TODO this null is going to cause us to lose
+                        // the location (gps).
+                        directory.toString(), fileName + "-" + x + ".jpg",
+                        croppedImage, null,
+                        degree);
+
+                setResult(RESULT_OK, new Intent()
+                        .setAction(newUri.toString())
+                        .putExtras(extras));
+            } catch (Exception ex) {
+                // basically ignore this or put up
+                // some ui saying we failed
+                Log.e(TAG, "store image fail, continue anyway", ex);
+            }
+        }
+
+        final Bitmap b = croppedImage;
+        mHandler.post(new Runnable() {
+            public void run() {
+                mImageView.clear();
+                b.recycle();
+            }
+        });
+
+        finish();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (mAllImages != null) {
+            mAllImages.close();
+        }
+        super.onDestroy();
+    }
 }
 
 class CropImageView extends ImageViewTouchBase {
@@ -630,6 +615,10 @@ class CropImageView extends ImageViewTouchBase {
     HighlightView mMotionHighlightView = null;
     float mLastX, mLastY;
     int mMotionEdge;
+
+    public CropImageView(Context context, AttributeSet attrs) {
+        super(context, attrs);
+    }
 
     @Override
     protected void onLayout(boolean changed, int left, int top,
@@ -644,10 +633,6 @@ class CropImageView extends ImageViewTouchBase {
                 }
             }
         }
-    }
-
-    public CropImageView(Context context, AttributeSet attrs) {
-        super(context, attrs);
     }
 
     @Override
@@ -732,8 +717,8 @@ class CropImageView extends ImageViewTouchBase {
                             mLastY = event.getY();
                             mMotionHighlightView.setMode(
                                     (edge == HighlightView.MOVE)
-                                    ? HighlightView.ModifyMode.Move
-                                    : HighlightView.ModifyMode.Grow);
+                                            ? HighlightView.ModifyMode.Move
+                                            : HighlightView.ModifyMode.Grow);
                             break;
                         }
                     }
@@ -840,8 +825,8 @@ class CropImageView extends ImageViewTouchBase {
         zoom = Math.max(1F, zoom);
 
         if ((Math.abs(zoom - getScale()) / zoom) > .1) {
-            float [] coordinates = new float[] {hv.mCropRect.centerX(),
-                                                hv.mCropRect.centerY()};
+            float[] coordinates = new float[]{hv.mCropRect.centerX(),
+                    hv.mCropRect.centerY()};
             getImageMatrix().mapPoints(coordinates);
             zoomTo(zoom, coordinates[0], coordinates[1], 300F);
         }

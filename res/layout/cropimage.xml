@@ -15,18 +15,20 @@
      limitations under the License.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent">
+             android:layout_width="fill_parent"
+             android:layout_height="fill_parent">
+
     <RelativeLayout
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:orientation="horizontal">
+
         <view
             android:id="@+id/image"
+            class="com.jaumo.cropimage.CropImageView"
             android:layout_width="fill_parent"
             android:layout_height="fill_parent"
-            class="com.jaumo.cropimage.CropImageView"
             android:background="#55000000"/>
-       
+
     </RelativeLayout>
 </FrameLayout>

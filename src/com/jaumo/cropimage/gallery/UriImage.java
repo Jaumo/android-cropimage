@@ -16,15 +16,15 @@
 
 package com.jaumo.cropimage.gallery;
 
-import com.jaumo.cropimage.BitmapManager;
-import com.jaumo.cropimage.Util;
-
 import android.content.ContentResolver;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
+
+import com.jaumo.cropimage.BitmapManager;
+import com.jaumo.cropimage.Util;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -82,13 +82,13 @@ class UriImage implements IImage {
     }
 
     public Bitmap fullSizeBitmap(int minSideLength, int maxNumberOfPixels,
-            boolean rotateAsNeeded) {
+                                 boolean rotateAsNeeded) {
         return fullSizeBitmap(minSideLength, maxNumberOfPixels,
                 rotateAsNeeded, IImage.NO_NATIVE);
     }
 
     public Bitmap fullSizeBitmap(int minSideLength, int maxNumberOfPixels,
-            boolean rotateAsNeeded, boolean useNative) {
+                                 boolean rotateAsNeeded, boolean useNative) {
         try {
             ParcelFileDescriptor pfdInput = getPFD();
             Bitmap b = Util.makeBitmap(minSideLength, maxNumberOfPixels,
