@@ -274,7 +274,7 @@ public class CropImage extends MonitoredActivity {
             mScaleUp = extras.getBoolean("scaleUpIfNeeded", true);
             mDoFaceDetection = !extras.containsKey("noFaceDetection") || !extras.getBoolean("noFaceDetection");
             mSaveLabel = extras.getString("saveLabel");
-            if (null == mSaveLabel) {
+            if (null == mSaveLabel || mSaveLabel.length() == 0) {
                 mSaveLabel = getString(R.string.crop_save_text);
             }
         }
