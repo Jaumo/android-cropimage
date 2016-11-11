@@ -45,6 +45,7 @@ public class CropImageIntentBuilder {
     private static final String EXTRA_SCALE = "scale";
     private static final String EXTRA_SCALE_UP_IF_NEEDED = "scaleUpIfNeeded";
     private static final String EXTRA_NO_FACE_DETECTION = "noFaceDetection";
+    private static final String EXTRA_BUTTON_COLOR = "buttonColor";
 
     private static final int DEFAULT_SCALE = 1;
     private final int aspectX;
@@ -57,6 +58,7 @@ public class CropImageIntentBuilder {
     private boolean doFaceDetection = true;
     private Uri sourceImage;
     private Bitmap bitmap;
+    private int buttonColor;
 
     /**
      * Constructor.
@@ -113,6 +115,7 @@ public class CropImageIntentBuilder {
         // Optional Intent Extras
         //
 
+        intent.putExtra(EXTRA_BUTTON_COLOR, this.buttonColor);
         intent.putExtra(EXTRA_SCALE, this.scale);
         intent.putExtra(EXTRA_SCALE_UP_IF_NEEDED, this.scaleUpIfNeeded);
         intent.putExtra(EXTRA_NO_FACE_DETECTION, !this.doFaceDetection);
@@ -126,6 +129,12 @@ public class CropImageIntentBuilder {
         }
 
         return intent;
+    }
+
+    public CropImageIntentBuilder setButtonColor(final int color) {
+        this.buttonColor = color;
+
+        return this;
     }
 
     /**

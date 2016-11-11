@@ -36,12 +36,12 @@ import android.os.Handler;
 import android.provider.MediaStore;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
-import android.view.Window;
+import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.jaumo.cropimage.gallery.IImage;
@@ -226,22 +226,17 @@ public class CropImage extends MonitoredActivity {
 
     @Override
     public void onCreate(Bundle icicle) {
-        supportRequestWindowFeature(Window.FEATURE_ACTION_BAR_OVERLAY);
+//        supportRequestWindowFeature(Window.FEATURE_ACTION_BAR_OVERLAY);
         super.onCreate(icicle);
         mContentResolver = getContentResolver();
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setBackgroundDrawable(getResources().getDrawable(R.drawable.ab_bg_black));
         setContentView(R.layout.cropimage);
 
         ImageView home = (ImageView) findViewById(android.R.id.home);
         if (home != null) {
             home.setAlpha(70);
         }
-//        ImageView home2 = (ImageView) findViewById(R.id.abs__home);
-//        if (home2 != null) {
-//            home2.setAlpha(70);
-//        }
 
         mImageView = (CropImageView) findViewById(R.id.image);
         mSaveLabel = getString(R.string.crop_save_text);
@@ -293,6 +288,18 @@ public class CropImage extends MonitoredActivity {
             }
         }
 
+        TextView button = (TextView)findViewById(R.id.saveButton);
+        button.setText(mSaveLabel);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onSaveClicked();
+            }
+        });
+        if (getIntent().hasExtra("buttonColor")) {
+            button.setBackgroundColor(getIntent().getIntExtra("buttonColor", 0));
+        }
+
         if (mBitmap == null) {
             finish();
             return;
@@ -305,17 +312,8 @@ public class CropImage extends MonitoredActivity {
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuItem menu1 = menu.add(0, 0, 0, mSaveLabel);
-        menu1.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS | MenuItem.SHOW_AS_ACTION_WITH_TEXT);
-        return true;
-    }
-
-    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == 0) {
-            onSaveClicked();
-        } else if (item.getItemId() == android.R.id.home) {
+        if (item.getItemId() == android.R.id.home) {
             setResult(RESULT_CANCELED);
             finish();
         }
