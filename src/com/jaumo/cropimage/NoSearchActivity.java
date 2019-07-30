@@ -16,7 +16,7 @@
 
 package com.jaumo.cropimage;
 
-import android.support.v7.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatActivity;
 
 public class NoSearchActivity extends AppCompatActivity {
     @Override
