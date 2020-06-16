@@ -11,13 +11,13 @@ apply plugin: 'com.android.library'
 
 repositories {
     google()
-    maven { url 'http://repo1.maven.org/maven2' }
+    maven { url 'https://repo1.maven.org/maven2' }
     jcenter()
 }
 
 dependencies {
     implementation(
-            'androidx.appcompat:appcompat:1.0.0',
+            'androidx.appcompat:appcompat:1.1.0',
     )
 }
 
